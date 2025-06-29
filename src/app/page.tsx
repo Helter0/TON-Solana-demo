@@ -17,6 +17,7 @@ export default function Home() {
   const [transferAmount, setTransferAmount] = useState<string>('0.001');
   const [recipientAddress, setRecipientAddress] = useState<string>('');
   const [isTransferring, setIsTransferring] = useState<boolean>(false);
+  const [copiedAddress, setCopiedAddress] = useState<string>('');
   const [keyVerification, setKeyVerification] = useState<{
     originalKeyBase64: string;
     originalKeyHex: string;
@@ -270,6 +271,30 @@ export default function Home() {
     setSignedMessage(JSON.stringify(challenge, null, 2));
   };
 
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedAddress(type);
+      setTimeout(() => setCopiedAddress(''), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopiedAddress(type);
+        setTimeout(() => setCopiedAddress(''), 2000);
+      } catch (fallbackError) {
+        console.error('Fallback copy failed:', fallbackError);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-8">
       <div className="max-w-4xl mx-auto">
@@ -295,9 +320,17 @@ export default function Home() {
                     <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
                     TON Address
                   </h3>
-                  <p className="font-mono text-sm bg-white p-3 rounded-lg border break-all">
-                    {userFriendlyAddress}
-                  </p>
+                  <div className="bg-white p-3 rounded-lg border flex items-center justify-between">
+                    <p className="font-mono text-sm text-gray-900 break-all flex-1 mr-3">
+                      {userFriendlyAddress}
+                    </p>
+                    <button
+                      onClick={() => copyToClipboard(userFriendlyAddress, 'ton')}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded text-xs font-medium transition-colors flex-shrink-0"
+                    >
+                      {copiedAddress === 'ton' ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="bg-purple-50 p-6 rounded-xl">
@@ -306,11 +339,21 @@ export default function Home() {
                     Solana Address
                   </h3>
                   <div className="bg-white p-3 rounded-lg border mb-3">
-                    <p className="font-mono text-sm break-all">
-                      {solanaAddress || 'Deriving...'}
-                    </p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-mono text-sm text-gray-900 break-all flex-1 mr-3">
+                        {solanaAddress || 'Deriving...'}
+                      </p>
+                      {solanaAddress && (
+                        <button
+                          onClick={() => copyToClipboard(solanaAddress, 'solana')}
+                          className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded text-xs font-medium transition-colors flex-shrink-0"
+                        >
+                          {copiedAddress === 'solana' ? '✓ Copied' : 'Copy'}
+                        </button>
+                      )}
+                    </div>
                     {solanaAddress && (
-                      <div className="mt-2 text-xs text-purple-600">
+                      <div className="text-xs text-purple-600">
                         Length: {solanaAddress.length} characters
                         {solanaAddress.length >= 32 && solanaAddress.length <= 44 ? 
                           ' ✅ Valid Solana format' : 
@@ -320,11 +363,21 @@ export default function Home() {
                     )}
                   </div>
                   {solBalance !== null && (
-                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border">
-                      <span className="text-sm font-medium text-purple-700">Balance:</span>
-                      <span className="font-mono text-sm font-bold text-purple-800">
-                        {solBalance.toFixed(6)} SOL
-                      </span>
+                    <div className="bg-white p-3 rounded-lg border">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-purple-700">Balance:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-bold text-purple-800">
+                            {solBalance.toFixed(6)} SOL
+                          </span>
+                          <button
+                            onClick={() => fetchSolBalance(solanaAddress)}
+                            className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded text-xs font-medium transition-colors"
+                          >
+                            🔄
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -335,9 +388,17 @@ export default function Home() {
                   <h3 className="text-xl font-semibold text-gray-800 mb-3">
                     Ed25519 Public Key (Base64)
                   </h3>
-                  <p className="font-mono text-sm bg-white p-3 rounded-lg border break-all">
-                    {publicKey}
-                  </p>
+                  <div className="bg-white p-3 rounded-lg border flex items-center justify-between">
+                    <p className="font-mono text-sm text-gray-900 break-all flex-1 mr-3">
+                      {publicKey}
+                    </p>
+                    <button
+                      onClick={() => copyToClipboard(publicKey, 'publickey')}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-medium transition-colors flex-shrink-0"
+                    >
+                      {copiedAddress === 'publickey' ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -395,7 +456,7 @@ export default function Home() {
                 <textarea
                   value={messageToSign}
                   onChange={(e) => setMessageToSign(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   rows={3}
                   placeholder="Enter message to sign..."
                 />
@@ -447,7 +508,7 @@ export default function Home() {
                   type="text"
                   value={recipientAddress}
                   onChange={(e) => setRecipientAddress(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm text-gray-900"
                   placeholder="Enter Solana address (Base58)..."
                 />
               </div>
@@ -463,7 +524,7 @@ export default function Home() {
                   max={solBalance}
                   value={transferAmount}
                   onChange={(e) => setTransferAmount(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                   placeholder="0.001"
                 />
                 <p className="text-sm text-gray-500 mt-1">
