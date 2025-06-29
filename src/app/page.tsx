@@ -24,10 +24,30 @@ export default function Home() {
         const pubKeyBase64 = tonConnectUI.account.publicKey;
         setPublicKey(pubKeyBase64);
         
-        // Convert base64 to buffer and then to base58 for Solana
+        // Convert base64 to buffer and ensure it's exactly 32 bytes for Solana
         const pubKeyBuffer = Buffer.from(pubKeyBase64, 'base64');
-        const solanaAddr = bs58.encode(pubKeyBuffer);
+        
+        // Solana addresses must be exactly 32 bytes
+        let solanaKeyBuffer: Buffer;
+        if (pubKeyBuffer.length === 32) {
+          solanaKeyBuffer = pubKeyBuffer;
+        } else if (pubKeyBuffer.length > 32) {
+          // Take first 32 bytes
+          solanaKeyBuffer = pubKeyBuffer.subarray(0, 32);
+        } else {
+          // Pad with zeros to reach 32 bytes
+          solanaKeyBuffer = Buffer.concat([pubKeyBuffer, Buffer.alloc(32 - pubKeyBuffer.length)]);
+        }
+        
+        const solanaAddr = bs58.encode(solanaKeyBuffer);
         setSolanaAddress(solanaAddr);
+        
+        // Debug info
+        console.log('TON Public Key (Base64):', pubKeyBase64);
+        console.log('Original buffer length:', pubKeyBuffer.length);
+        console.log('Solana key buffer length:', solanaKeyBuffer.length);
+        console.log('Solana address:', solanaAddr);
+        console.log('Solana address length:', solanaAddr.length);
         
         // Get SOL balance
         fetchSolBalance(solanaAddr);
@@ -186,9 +206,20 @@ export default function Home() {
                     <span className="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
                     Solana Address
                   </h3>
-                  <p className="font-mono text-sm bg-white p-3 rounded-lg border break-all mb-3">
-                    {solanaAddress || 'Deriving...'}
-                  </p>
+                  <div className="bg-white p-3 rounded-lg border mb-3">
+                    <p className="font-mono text-sm break-all">
+                      {solanaAddress || 'Deriving...'}
+                    </p>
+                    {solanaAddress && (
+                      <div className="mt-2 text-xs text-purple-600">
+                        Length: {solanaAddress.length} characters
+                        {solanaAddress.length >= 32 && solanaAddress.length <= 44 ? 
+                          ' ✅ Valid Solana format' : 
+                          ' ⚠️ Invalid length for Solana address'
+                        }
+                      </div>
+                    )}
+                  </div>
                   {solBalance !== null && (
                     <div className="flex items-center justify-between bg-white p-3 rounded-lg border">
                       <span className="text-sm font-medium text-purple-700">Balance:</span>
