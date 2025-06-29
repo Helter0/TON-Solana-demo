@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { TonConnectButton, useTonConnectUI, useTonAddress } from '@tonconnect/ui-react';
 import bs58 from 'bs58';
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { mnemonicToWalletKey } from '@ton/crypto';
+import * as bip39 from 'bip39';
 
 export default function Home() {
   const [tonConnectUI] = useTonConnectUI();
@@ -19,6 +21,16 @@ export default function Home() {
   const [isTransferring, setIsTransferring] = useState<boolean>(false);
   const [copiedAddress, setCopiedAddress] = useState<string>('');
   const [currentRPC, setCurrentRPC] = useState<string>('');
+  const [seedPhrase, setSeedPhrase] = useState<string>('');
+  const [seedVerification, setSeedVerification] = useState<{
+    seedWords: number;
+    tonPublicKeyBase64: string;
+    tonPublicKeyHex: string;
+    solanaKeyHex: string;
+    derivedSolanaAddress: string;
+    matchesConnectedWallet: boolean;
+    matchesDisplayedSolanaAddress: boolean;
+  } | null>(null);
   const [keyVerification, setKeyVerification] = useState<{
     originalKeyBase64: string;
     originalKeyHex: string;
@@ -361,6 +373,59 @@ export default function Home() {
     }
   };
 
+  const verifySeedPhrase = async () => {
+    if (!seedPhrase.trim()) {
+      alert('Please enter seed phrase');
+      return;
+    }
+
+    try {
+      const words = seedPhrase.trim().split(/\s+/);
+      if (words.length !== 12 && words.length !== 24) {
+        alert('Seed phrase should be 12 or 24 words');
+        return;
+      }
+
+      // Validate mnemonic
+      if (!bip39.validateMnemonic(seedPhrase.trim())) {
+        alert('Invalid seed phrase');
+        return;
+      }
+
+      // Generate TON wallet key
+      const keyPair = await mnemonicToWalletKey(words);
+      const tonPublicKey = keyPair.publicKey.toString('base64');
+      
+      // Generate Solana address (same logic as main app)
+      let solanaKeyBuffer: Buffer;
+      if (keyPair.publicKey.length === 32) {
+        solanaKeyBuffer = keyPair.publicKey;
+      } else if (keyPair.publicKey.length > 32) {
+        solanaKeyBuffer = keyPair.publicKey.subarray(0, 32);
+      } else {
+        solanaKeyBuffer = Buffer.concat([keyPair.publicKey, Buffer.alloc(32 - keyPair.publicKey.length)]);
+      }
+      
+      const derivedSolanaAddress = bs58.encode(solanaKeyBuffer);
+
+      const verification = {
+        seedWords: words.length,
+        tonPublicKeyBase64: tonPublicKey,
+        tonPublicKeyHex: keyPair.publicKey.toString('hex'),
+        solanaKeyHex: solanaKeyBuffer.toString('hex'),
+        derivedSolanaAddress: derivedSolanaAddress,
+        matchesConnectedWallet: tonPublicKey === publicKey,
+        matchesDisplayedSolanaAddress: derivedSolanaAddress === solanaAddress
+      };
+
+      setSeedVerification(verification);
+
+    } catch (error) {
+      console.error('Seed verification error:', error);
+      alert('Error processing seed phrase: ' + (error as Error).message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-8">
       <div className="max-w-4xl mx-auto">
@@ -629,6 +694,68 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mt-8">
+          <h3 className="text-lg font-semibold text-yellow-800 mb-4">🔍 Verify Address with Seed Phrase:</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-yellow-700 mb-2">
+                Enter your TON wallet seed phrase (12 or 24 words):
+              </label>
+              <textarea
+                value={seedPhrase}
+                onChange={(e) => setSeedPhrase(e.target.value)}
+                className="w-full p-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900"
+                rows={3}
+                placeholder="word1 word2 word3 ..."
+              />
+              <p className="text-xs text-yellow-600 mt-1">
+                ⚠️ Only use with test/disposable wallets. Never share real seed phrases.
+              </p>
+            </div>
+            
+            <button
+              onClick={verifySeedPhrase}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              Verify Seed Phrase
+            </button>
+
+            {seedVerification && (
+              <div className="bg-white p-4 rounded-lg border border-yellow-200">
+                <h4 className="font-semibold text-yellow-800 mb-3">Verification Results:</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="font-medium text-yellow-700">Seed Words:</span>
+                      <div className="font-mono">{seedVerification.seedWords}</div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-yellow-700">Matches Connected Wallet:</span>
+                      <div className={seedVerification.matchesConnectedWallet ? 'text-green-600' : 'text-red-600'}>
+                        {seedVerification.matchesConnectedWallet ? '✅ Yes' : '❌ No'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <span className="font-medium text-yellow-700">Derived Solana Address:</span>
+                    <div className="font-mono text-xs break-all bg-gray-50 p-2 rounded">
+                      {seedVerification.derivedSolanaAddress}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <span className="font-medium text-yellow-700">Matches Displayed Address:</span>
+                    <div className={seedVerification.matchesDisplayedSolanaAddress ? 'text-green-600' : 'text-red-600'}>
+                      {seedVerification.matchesDisplayedSolanaAddress ? '✅ Perfect Match' : '❌ Different Address'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mt-8">
           <h3 className="text-lg font-semibold text-blue-800 mb-4">🔐 How to verify the address is correct:</h3>
