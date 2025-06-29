@@ -1,7 +1,7 @@
 {
-  "url": "http://localhost:3000",
+  "url": "https://ton-solana-demo.vercel.app",
   "name": "TON-Solana Bridge Demo",
-  "iconUrl": "http://localhost:3000/icon.png",
-  "termsOfUseUrl": "http://localhost:3000/terms",
-  "privacyPolicyUrl": "http://localhost:3000/privacy"
+  "iconUrl": "https://ton-solana-demo.vercel.app/icon.png",
+  "termsOfUseUrl": "https://ton-solana-demo.vercel.app/terms",
+  "privacyPolicyUrl": "https://ton-solana-demo.vercel.app/privacy"
 }
