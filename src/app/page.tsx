@@ -1,103 +1,161 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { TonConnectButton, useTonConnectUI, useTonAddress } from '@tonconnect/ui-react';
+import bs58 from 'bs58';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [tonConnectUI] = useTonConnectUI();
+  const userFriendlyAddress = useTonAddress();
+  const [solanaAddress, setSolanaAddress] = useState<string>('');
+  const [publicKey, setPublicKey] = useState<string>('');
+  const [signedMessage, setSignedMessage] = useState<string>('');
+  const [messageToSign, setMessageToSign] = useState<string>('Hello from TON to Solana!');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    if (tonConnectUI && tonConnectUI.account?.publicKey) {
+      try {
+        const pubKeyBase64 = tonConnectUI.account.publicKey;
+        setPublicKey(pubKeyBase64);
+        
+        // Convert base64 to buffer and then to base58 for Solana
+        const pubKeyBuffer = Buffer.from(pubKeyBase64, 'base64');
+        const solanaAddr = bs58.encode(pubKeyBuffer);
+        setSolanaAddress(solanaAddr);
+      } catch (error) {
+        console.error('Error deriving Solana address:', error);
+      }
+    } else {
+      setSolanaAddress('');
+      setPublicKey('');
+    }
+  }, [tonConnectUI, tonConnectUI?.account]);
+
+  const signMessage = async () => {
+    if (!tonConnectUI || !tonConnectUI.connected) {
+      alert('Please connect your TON wallet first');
+      return;
+    }
+
+    // Note: signData is not yet available in current TON Connect SDK
+    // This is a demonstration of what the signature would look like
+    const mockSignature = {
+      signature: "mock_ed25519_signature_" + Date.now(),
+      timestamp: Math.floor(Date.now() / 1000).toString(),
+      message: messageToSign,
+      publicKey: publicKey,
+      solanaAddress: solanaAddress
+    };
+
+    setSignedMessage(JSON.stringify(mockSignature, null, 2));
+    
+    // Alternative: Use ton_proof for authentication-style signing
+    // This demonstrates the concept until signData is fully implemented
+    alert('Note: This is a mock signature. SignData API is experimental in TON Connect.');
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            TON-Solana Bridge Demo
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Connect your TON wallet and use it to sign Solana transactions
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          <div className="flex justify-center mb-8">
+            <TonConnectButton />
+          </div>
+
+          {userFriendlyAddress && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-blue-50 p-6 rounded-xl">
+                  <h3 className="text-xl font-semibold text-blue-800 mb-3 flex items-center">
+                    <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                    TON Address
+                  </h3>
+                  <p className="font-mono text-sm bg-white p-3 rounded-lg border break-all">
+                    {userFriendlyAddress}
+                  </p>
+                </div>
+
+                <div className="bg-purple-50 p-6 rounded-xl">
+                  <h3 className="text-xl font-semibold text-purple-800 mb-3 flex items-center">
+                    <span className="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
+                    Solana Address
+                  </h3>
+                  <p className="font-mono text-sm bg-white p-3 rounded-lg border break-all">
+                    {solanaAddress || 'Deriving...'}
+                  </p>
+                </div>
+              </div>
+
+              {publicKey && (
+                <div className="bg-gray-50 p-6 rounded-xl">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                    Ed25519 Public Key (Base64)
+                  </h3>
+                  <p className="font-mono text-sm bg-white p-3 rounded-lg border break-all">
+                    {publicKey}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {userFriendlyAddress && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">
+              Sign Message for Solana
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message to sign:
+                </label>
+                <textarea
+                  value={messageToSign}
+                  onChange={(e) => setMessageToSign(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                  placeholder="Enter message to sign..."
+                />
+              </div>
+
+              <button
+                onClick={signMessage}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
+              >
+                Sign Message with TON Wallet
+              </button>
+
+              {signedMessage && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                    Signed Result:
+                  </h3>
+                  <pre className="bg-gray-100 p-4 rounded-lg text-sm overflow-x-auto">
+                    {signedMessage}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="text-center mt-8 text-gray-500">
+          <p>
+            This demo shows how a TON wallet can be used to sign messages that are compatible with Solana blockchain
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

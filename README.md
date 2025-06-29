@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TON-Solana Bridge Demo
 
-## Getting Started
+Демонстрация возможности использования TON кошелька для подписания сообщений, совместимых с блокчейном Solana.
 
-First, run the development server:
+## Особенности
+
+- 🔗 Подключение TON кошелька через TON Connect
+- 🏠 Автоматическая генерация Solana адреса из Ed25519 публичного ключа
+- ✍️ Демонстрация подписи сообщений (мок-реализация)
+- 🎨 Современный UI с Tailwind CSS
+- ⚡ Быстрая разработка с Next.js и TypeScript
+
+## Технические детали
+
+### Как это работает
+
+1. **Подключение кошелька**: Пользователь подключает TON кошелек через TON Connect
+2. **Извлечение ключа**: Получаем Ed25519 публичный ключ из подключенного кошелька
+3. **Генерация адреса**: Конвертируем публичный ключ в Base58 для получения Solana адреса
+4. **Подпись сообщений**: Используем тот же Ed25519 ключ для подписи (совместимо с Solana)
+
+### Совместимость
+
+- TON использует Ed25519 для криптографических операций
+- Solana также использует Ed25519 для подписей
+- Адрес Solana = Ed25519 публичный ключ в Base58 формате
+- Подписи полностью совместимы между блокчейнами
+
+## Запуск проекта
 
 ```bash
+# Установка зависимостей
+npm install
+
+# Запуск в режиме разработки
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Сборка для продакшена
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000) в браузере.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Деплой на Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Подключите репозиторий к Vercel
+2. Настройки деплоя будут автоматически определены
+3. Обновите `manifestUrl` в `TonConnectProvider.tsx` на ваш домен
 
-## Learn More
+## Ограничения
 
-To learn more about Next.js, take a look at the following resources:
+- SignData API в TON Connect пока экспериментальный
+- Текущая реализация использует мок-подписи для демонстрации концепции
+- Для продакшена требуется полная реализация SignData
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Структура проекта
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/
+│   ├── layout.tsx          # Корневой лейаут с провайдером
+│   ├── page.tsx            # Главная страница с демо
+│   └── globals.css         # Глобальные стили
+├── components/
+│   └── TonConnectProvider.tsx  # Провайдер TON Connect
+└── public/
+    └── tonconnect-manifest.json  # Манифест для TON Connect
+```
 
-## Deploy on Vercel
+## Зависимости
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `@tonconnect/ui-react` - React компоненты TON Connect
+- `@tonconnect/sdk` - TON Connect SDK
+- `bs58` - Base58 кодирование для Solana адресов
+- `next` - React фреймворк
+- `tailwindcss` - CSS фреймворк
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Планы развития
+
+- [ ] Реализация настоящего SignData API когда он станет стабильным
+- [ ] Интеграция с Solana Web3.js для отправки транзакций
+- [ ] Поддержка других блокчейнов с Ed25519 (NEAR, Stellar)
+- [ ] Улучшенная обработка ошибок
+- [ ] Больше примеров использования
