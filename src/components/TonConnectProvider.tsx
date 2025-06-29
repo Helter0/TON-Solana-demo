@@ -10,7 +10,7 @@ interface TonConnectProviderProps {
 export function TonConnectProvider({ children }: TonConnectProviderProps) {
   return (
     <TonConnectUIProvider
-      manifestUrl="/tonconnect-manifest.json"
+      manifestUrl="https://ton-solana-demo.vercel.app/tonconnect-manifest.json"
     >
       {children}
     </TonConnectUIProvider>
