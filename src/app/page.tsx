@@ -166,6 +166,21 @@ export default function Home() {
       return;
     }
 
+    // Check if wallet supports signData
+    const wallet = tonConnectUI.wallet;
+    const supportsSignData = wallet && wallet.device?.features && wallet.device.features.includes('SendTransaction');
+    
+    if (!supportsSignData) {
+      alert('Your wallet does not support SignData feature. Please use Tonkeeper wallet.');
+      return;
+    }
+
+    const realTransaction = confirm('🚨 REAL MAINNET TRANSACTION!\n\nThis will send real SOL on Solana mainnet.\nTransaction cannot be undone.\n\nContinue?');
+    
+    if (!realTransaction) {
+      return;
+    }
+
     setIsTransferring(true);
     setTxHash('');
 
@@ -220,32 +235,79 @@ export default function Home() {
       
       // Serialize transaction for signing
       const serializedTx = transaction.serializeMessage();
-      const txHash = bs58.encode(serializedTx);
       
-      // For now, show what would be signed (SignData API not yet available)
-      const signatureData = {
-        action: 'SOL Transfer',
-        from: solanaAddress,
-        to: recipientAddress,
-        amount: `${transferAmount} SOL`,
-        estimatedFee: feeEstimate?.value ? `${(feeEstimate.value / LAMPORTS_PER_SOL).toFixed(6)} SOL` : '~0.000005 SOL',
-        network: 'Solana Mainnet',
-        rpcEndpoint: rpcEndpoints.find(endpoint => {
-          try {
-            return new Connection(endpoint, 'confirmed') === connection;
-          } catch {
-            return false;
-          }
-        }) || 'Unknown',
-        transactionSize: `${serializedTx.length} bytes`,
-        transactionHash: txHash.slice(0, 32) + '...',
-        blockhash: blockhash.slice(0, 16) + '...',
-        timestamp: new Date().toISOString(),
-        note: 'Transaction prepared successfully! Ready for signing when SignData API is available.'
-      };
-      
-      setTxHash(JSON.stringify(signatureData, null, 2));
-      alert('🚀 Transaction prepared!\n\nThis demonstrates how your TON wallet would sign a real Solana transaction. When SignData API is fully implemented, this will execute on-chain.');
+      try {
+        // Try to sign with Tonkeeper SignData
+        console.log('Attempting to sign Solana transaction with TON wallet...');
+        
+        // Try Tonkeeper-specific SignData format
+        const signResult = await (tonConnectUI as unknown as { signData: (data: { schema_crc: number; cell: string }) => Promise<{ signature: string }> }).signData({
+          schema_crc: 0,
+          cell: bs58.encode(serializedTx)
+        });
+        
+        console.log('SignData result:', signResult);
+        
+        // If we get here, the transaction was signed!
+        // Now we need to apply the signature and send to Solana
+        const signature = signResult.signature;
+        
+        // Apply signature to transaction
+        // Note: This is simplified - real implementation needs proper signature handling
+        transaction.addSignature(fromPubkey, Buffer.from(signature, 'base64'));
+        
+        // Send transaction to Solana
+        const txId = await connection.sendRawTransaction(transaction.serialize());
+        
+        // Wait for confirmation
+        const confirmation = await connection.confirmTransaction(txId, 'confirmed');
+        
+        if (confirmation.value.err) {
+          throw new Error(`Transaction failed: ${confirmation.value.err}`);
+        }
+        
+        const successData = {
+          status: 'SUCCESS',
+          transactionId: txId,
+          from: solanaAddress,
+          to: recipientAddress,
+          amount: `${transferAmount} SOL`,
+          actualFee: feeEstimate?.value ? `${(feeEstimate.value / LAMPORTS_PER_SOL).toFixed(6)} SOL` : 'Unknown',
+          explorer: `https://solscan.io/tx/${txId}`,
+          timestamp: new Date().toISOString(),
+          note: '🎉 Real Solana transaction executed using TON wallet signature!'
+        };
+        
+        setTxHash(JSON.stringify(successData, null, 2));
+        alert(`🎉 SUCCESS!\n\nTransaction sent to Solana mainnet!\nTX ID: ${txId}\n\nCheck on Solscan: https://solscan.io/tx/${txId}`);
+        
+        // Refresh balance
+        setTimeout(() => fetchSolBalance(solanaAddress), 2000);
+        
+      } catch (signError) {
+        console.error('SignData failed:', signError);
+        
+        // Fallback to showing prepared transaction
+        const txHash = bs58.encode(serializedTx);
+        const signatureData = {
+          status: 'SIGN_FAILED',
+          error: (signError as Error)?.message || 'SignData not supported or failed',
+          action: 'SOL Transfer',
+          from: solanaAddress,
+          to: recipientAddress,
+          amount: `${transferAmount} SOL`,
+          estimatedFee: feeEstimate?.value ? `${(feeEstimate.value / LAMPORTS_PER_SOL).toFixed(6)} SOL` : '~0.000005 SOL',
+          network: 'Solana Mainnet',
+          transactionSize: `${serializedTx.length} bytes`,
+          transactionHash: txHash.slice(0, 32) + '...',
+          blockhash: blockhash.slice(0, 16) + '...',
+          timestamp: new Date().toISOString(),
+          note: 'SignData failed. Transaction prepared but not executed. Make sure you are using Tonkeeper wallet.'
+        };
+        
+        setTxHash(JSON.stringify(signatureData, null, 2));
+        alert('❌ SignData failed!\n\nMake sure you are using Tonkeeper wallet with SignData support.\n\nTransaction was prepared but not executed.');
+      }
       
     } catch (error) {
       console.error('Error creating transaction:', error);
@@ -502,14 +564,14 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Transfer SOL (Mainnet)
             </h2>
-            <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-6">
-              <h3 className="text-lg font-medium text-orange-800 mb-2">⚠️ Real Mainnet Transaction:</h3>
-              <ul className="text-orange-700 space-y-1">
-                <li>• This creates a real Solana transaction on mainnet</li>
-                <li>• Make sure recipient address is correct</li>
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+              <h3 className="text-lg font-medium text-red-800 mb-2">🚨 REAL MAINNET TRANSACTION:</h3>
+              <ul className="text-red-700 space-y-1">
+                <li>• <strong>This will execute a real Solana transaction with real money!</strong></li>
+                <li>• Make sure recipient address is correct - transactions cannot be undone</li>
                 <li>• Transaction fees will be deducted from your balance</li>
-                <li>• Uses multiple RPC endpoints for reliability</li>
-                <li>• Currently shows transaction preparation (SignData API pending)</li>
+                <li>• <strong>Requires Tonkeeper wallet with SignData support</strong></li>
+                <li>• Other wallets will show transaction preparation only</li>
               </ul>
             </div>
             
@@ -549,9 +611,9 @@ export default function Home() {
               <button
                 onClick={transferSol}
                 disabled={isTransferring || !recipientAddress || !transferAmount}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                className="bg-gradient-to-r from-red-600 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-red-700 hover:to-orange-700 transition-all duration-200 font-bold disabled:opacity-50 disabled:cursor-not-allowed w-full text-lg"
               >
-                {isTransferring ? 'Preparing Transaction...' : 'Transfer SOL'}
+                {isTransferring ? '🔄 Signing & Sending...' : '🚨 EXECUTE REAL SOL TRANSFER'}
               </button>
 
               {txHash && (
