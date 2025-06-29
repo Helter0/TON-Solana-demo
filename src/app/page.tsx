@@ -18,6 +18,7 @@ export default function Home() {
   const [recipientAddress, setRecipientAddress] = useState<string>('');
   const [isTransferring, setIsTransferring] = useState<boolean>(false);
   const [copiedAddress, setCopiedAddress] = useState<string>('');
+  const [currentRPC, setCurrentRPC] = useState<string>('');
   const [keyVerification, setKeyVerification] = useState<{
     originalKeyBase64: string;
     originalKeyHex: string;
@@ -92,6 +93,7 @@ export default function Home() {
     try {
       // Try multiple RPC endpoints for better reliability
       const rpcEndpoints = [
+        'https://mainnet.helius-rpc.com/?api-key=69fa6848-d6cf-4b62-bf25-3fb4967b120e',
         'https://solana-api.projectserum.com',
         'https://rpc.ankr.com/solana',
         'https://api.mainnet-beta.solana.com'
@@ -104,6 +106,7 @@ export default function Home() {
           const publicKey = new PublicKey(address);
           const balance = await connection.getBalance(publicKey);
           setSolBalance(balance / LAMPORTS_PER_SOL);
+          setCurrentRPC(endpoint);
           console.log(`Successfully connected to: ${endpoint}`);
           return;
         } catch (endpointError) {
@@ -169,6 +172,7 @@ export default function Home() {
     try {
       // Try multiple RPC endpoints for transaction creation
       const rpcEndpoints = [
+        'https://mainnet.helius-rpc.com/?api-key=69fa6848-d6cf-4b62-bf25-3fb4967b120e',
         'https://solana-api.projectserum.com',
         'https://rpc.ankr.com/solana',
         'https://api.mainnet-beta.solana.com'
@@ -380,6 +384,13 @@ export default function Home() {
                     {solBalance === null && (
                       <div className="mt-2 text-xs text-orange-600">
                         ⚠️ Balance not loaded. Try refresh button or check RPC connection.
+                      </div>
+                    )}
+                    {currentRPC && (
+                      <div className="mt-2 text-xs text-green-600">
+                        ✅ Connected to: {currentRPC.includes('helius') ? 'Helius (Premium)' : 
+                                         currentRPC.includes('serum') ? 'Serum' : 
+                                         currentRPC.includes('ankr') ? 'Ankr' : 'Official'}
                       </div>
                     )}
                   </div>
