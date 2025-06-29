@@ -89,10 +89,29 @@ export default function Home() {
 
   const fetchSolBalance = async (address: string) => {
     try {
-      const connection = new Connection('https://api.mainnet-beta.solana.com');
-      const publicKey = new PublicKey(address);
-      const balance = await connection.getBalance(publicKey);
-      setSolBalance(balance / LAMPORTS_PER_SOL);
+      // Try multiple RPC endpoints for better reliability
+      const rpcEndpoints = [
+        'https://solana-api.projectserum.com',
+        'https://rpc.ankr.com/solana',
+        'https://api.mainnet-beta.solana.com'
+      ];
+      
+      let connection: Connection | null = null;
+      for (const endpoint of rpcEndpoints) {
+        try {
+          connection = new Connection(endpoint, 'confirmed');
+          const publicKey = new PublicKey(address);
+          const balance = await connection.getBalance(publicKey);
+          setSolBalance(balance / LAMPORTS_PER_SOL);
+          console.log(`Successfully connected to: ${endpoint}`);
+          return;
+        } catch (endpointError) {
+          console.log(`Failed to connect to ${endpoint}:`, endpointError);
+          continue;
+        }
+      }
+      
+      throw new Error('All RPC endpoints failed');
     } catch (error) {
       console.error('Error fetching SOL balance:', error);
       setSolBalance(0);
@@ -147,15 +166,37 @@ export default function Home() {
     setTxHash('');
 
     try {
-      // Create Solana connection
-      const connection = new Connection('https://api.mainnet-beta.solana.com');
+      // Try multiple RPC endpoints for transaction creation
+      const rpcEndpoints = [
+        'https://solana-api.projectserum.com',
+        'https://rpc.ankr.com/solana',
+        'https://api.mainnet-beta.solana.com'
+      ];
+      
+      let connection: Connection | null = null;
+      let blockhash: string | null = null;
+      
+      // Find working RPC endpoint
+      for (const endpoint of rpcEndpoints) {
+        try {
+          connection = new Connection(endpoint, 'confirmed');
+          const result = await connection.getLatestBlockhash('confirmed');
+          blockhash = result.blockhash;
+          console.log(`Using RPC endpoint: ${endpoint}`);
+          break;
+        } catch (endpointError) {
+          console.log(`RPC ${endpoint} failed:`, endpointError);
+          continue;
+        }
+      }
+      
+      if (!connection || !blockhash) {
+        throw new Error('All RPC endpoints failed to provide blockhash');
+      }
       
       // Create public keys
       const fromPubkey = new PublicKey(solanaAddress);
       const toPubkey = new PublicKey(recipientAddress);
-      
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
       
       // Create transfer instruction
       const transferInstruction = SystemProgram.transfer({
@@ -169,6 +210,9 @@ export default function Home() {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = fromPubkey;
       
+      // Get estimated fee
+      const feeEstimate = await connection.getFeeForMessage(transaction.compileMessage(), 'confirmed');
+      
       // Serialize transaction for signing
       const serializedTx = transaction.serializeMessage();
       const txHash = bs58.encode(serializedTx);
@@ -179,11 +223,20 @@ export default function Home() {
         from: solanaAddress,
         to: recipientAddress,
         amount: `${transferAmount} SOL`,
-        fee: '~0.000005 SOL',
+        estimatedFee: feeEstimate?.value ? `${(feeEstimate.value / LAMPORTS_PER_SOL).toFixed(6)} SOL` : '~0.000005 SOL',
         network: 'Solana Mainnet',
+        rpcEndpoint: rpcEndpoints.find(endpoint => {
+          try {
+            return new Connection(endpoint, 'confirmed') === connection;
+          } catch {
+            return false;
+          }
+        }) || 'Unknown',
+        transactionSize: `${serializedTx.length} bytes`,
         transactionHash: txHash.slice(0, 32) + '...',
+        blockhash: blockhash.slice(0, 16) + '...',
         timestamp: new Date().toISOString(),
-        note: 'This would be a real Solana transaction when SignData API is available'
+        note: 'Transaction prepared successfully! Ready for signing when SignData API is available.'
       };
       
       setTxHash(JSON.stringify(signatureData, null, 2));
@@ -380,6 +433,7 @@ export default function Home() {
                 <li>• This creates a real Solana transaction on mainnet</li>
                 <li>• Make sure recipient address is correct</li>
                 <li>• Transaction fees will be deducted from your balance</li>
+                <li>• Uses multiple RPC endpoints for reliability</li>
                 <li>• Currently shows transaction preparation (SignData API pending)</li>
               </ul>
             </div>
