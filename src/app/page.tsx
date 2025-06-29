@@ -362,24 +362,27 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  {solBalance !== null && (
-                    <div className="bg-white p-3 rounded-lg border">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-purple-700">Balance:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-bold text-purple-800">
-                            {solBalance.toFixed(6)} SOL
-                          </span>
-                          <button
-                            onClick={() => fetchSolBalance(solanaAddress)}
-                            className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded text-xs font-medium transition-colors"
-                          >
-                            🔄
-                          </button>
-                        </div>
+                  <div className="bg-white p-3 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-purple-700">Balance:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-bold text-purple-800">
+                          {solBalance !== null ? `${solBalance.toFixed(6)} SOL` : 'Loading...'}
+                        </span>
+                        <button
+                          onClick={() => fetchSolBalance(solanaAddress)}
+                          className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded text-xs font-medium transition-colors"
+                        >
+                          🔄
+                        </button>
                       </div>
                     </div>
-                  )}
+                    {solBalance === null && (
+                      <div className="mt-2 text-xs text-orange-600">
+                        ⚠️ Balance not loaded. Try refresh button or check RPC connection.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -483,7 +486,7 @@ export default function Home() {
           </div>
         )}
 
-        {userFriendlyAddress && solBalance !== null && (
+        {userFriendlyAddress && solanaAddress && (
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Transfer SOL (Mainnet)
@@ -521,14 +524,14 @@ export default function Home() {
                   type="number"
                   step="0.000001"
                   min="0.000001"
-                  max={solBalance}
+                  max={solBalance || undefined}
                   value={transferAmount}
                   onChange={(e) => setTransferAmount(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                   placeholder="0.001"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Available: {solBalance.toFixed(6)} SOL
+                  Available: {solBalance !== null ? `${solBalance.toFixed(6)} SOL` : 'Loading balance...'}
                 </p>
               </div>
 
