@@ -49,8 +49,8 @@ export default function Home() {
         const pubKeyBase64 = tonConnectUI.account.publicKey;
         setPublicKey(pubKeyBase64);
         
-        // Convert base64 to buffer and ensure it's exactly 32 bytes for Solana
-        const pubKeyBuffer = Buffer.from(pubKeyBase64, 'base64');
+        // Convert hex to buffer and ensure it's exactly 32 bytes for Solana
+        const pubKeyBuffer = Buffer.from(pubKeyBase64, 'hex');
         
         // Solana addresses must be exactly 32 bytes
         let solanaKeyBuffer: Buffer;
@@ -428,6 +428,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-8">
+      {/* Version indicator */}
+      <div className="fixed top-4 right-4 bg-white rounded-full p-2 shadow-lg z-10">
+        <span className="text-2xl">🔧</span>
+      </div>
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
@@ -527,7 +531,7 @@ export default function Home() {
               {publicKey && (
                 <div className="bg-gray-50 p-6 rounded-xl">
                   <h3 className="text-xl font-semibold text-gray-800 mb-3">
-                    Ed25519 Public Key (Base64)
+                    Ed25519 Public Key (Hex)
                   </h3>
                   <div className="bg-white p-3 rounded-lg border flex items-center justify-between">
                     <p className="font-mono text-sm text-gray-900 break-all flex-1 mr-3">
