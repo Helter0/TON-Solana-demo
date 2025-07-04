@@ -11,9 +11,7 @@ const nextConfig: NextConfig = {
     return config;
   },
   transpilePackages: ['@solana/wallet-adapter-base', '@solana/wallet-adapter-react'],
-  experimental: {
-    serverComponentsExternalPackages: ['@solana/web3.js'],
-  },
+  serverExternalPackages: ['@solana/web3.js'],
 };
 
 export default nextConfig;
