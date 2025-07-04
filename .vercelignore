@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Backend (not needed for frontend deploy)
+backend/
+packages/
+programs/
+
+# Development files
+.env.local
+.env.development.local
+.env.test.local
+
+# Build outputs (except frontend)
+dist/
+build/
+target/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
