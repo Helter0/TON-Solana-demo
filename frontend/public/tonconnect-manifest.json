@@ -1,7 +1,7 @@
 {
-  "url": "https://ton-solana-smart-wallet.vercel.app",
+  "url": "https://ton-solana-demo.vercel.app",
   "name": "TON-Solana Smart Wallet",
-  "iconUrl": "https://ton-solana-smart-wallet.vercel.app/icon-512x512.png",
-  "termsOfUseUrl": "https://ton-solana-smart-wallet.vercel.app/terms",
-  "privacyPolicyUrl": "https://ton-solana-smart-wallet.vercel.app/privacy"
+  "iconUrl": "https://ton-solana-demo.vercel.app/icon-512x512.png",
+  "termsOfUseUrl": "https://ton-solana-demo.vercel.app",
+  "privacyPolicyUrl": "https://ton-solana-demo.vercel.app"
 }

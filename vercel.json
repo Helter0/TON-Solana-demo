@@ -1,6 +1,17 @@
 {
-  "buildCommand": "cd frontend && npm run build",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/.next",
-  "installCommand": "npm install",
-  "framework": "nextjs"
+  "installCommand": "npm install --production=false",
+  "framework": "nextjs",
+  "functions": {
+    "frontend/src/app/**": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "env": {
+    "NEXT_PUBLIC_SOLANA_RPC_URL": "https://api.mainnet-beta.solana.com",
+    "NEXT_PUBLIC_PROGRAM_ID": "9WmFfBdBMNQSBGkMxgJK4QKoNJEgkEGjLwGzn3TfDQ5c",
+    "NEXT_PUBLIC_JUPITER_API_URL": "https://quote-api.jup.ag/v6"
+  }
 }

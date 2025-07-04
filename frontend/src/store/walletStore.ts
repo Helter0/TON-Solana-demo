@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface WalletState {
   // TON Connection
@@ -79,6 +79,7 @@ export const useWalletStore = create<WalletState>()(
     }),
     {
       name: 'ton-solana-wallet',
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         tonAddress: state.tonAddress,
         tonPublicKey: state.tonPublicKey,

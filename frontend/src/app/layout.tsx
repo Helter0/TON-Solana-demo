@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   themeColor: '#0ea5e9',
 };
 
-const manifestUrl = process.env.NEXT_PUBLIC_MANIFEST_URL || 'https://ton-solana-wallet.com/tonconnect-manifest.json';
+const manifestUrl = process.env.NEXT_PUBLIC_MANIFEST_URL || (typeof window !== 'undefined' ? `${window.location.origin}/tonconnect-manifest.json` : '/tonconnect-manifest.json');
 
 export default function RootLayout({
   children,
