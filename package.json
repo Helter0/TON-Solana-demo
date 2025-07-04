@@ -1,12 +1,26 @@
 {
-  "name": "ton-solana-demo",
-  "version": "0.1.0",
+  "name": "ton-solana-smart-wallet",
+  "version": "1.0.0",
+  "description": "Cross-chain smart wallet: TON authentication for Solana account management",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "frontend"
+  ],
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "npm run dev:backend & npm run dev:frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build": "npm run build:program && npm run build:backend && npm run build:frontend",
+    "build:program": "cd programs/ton-smart-wallet && anchor build",
+    "build:backend": "npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "test": "npm run test:program && npm run test:backend && npm run test:frontend",
+    "test:program": "cd programs/ton-smart-wallet && anchor test",
+    "test:backend": "npm run test --workspace=backend",
+    "test:frontend": "npm run test --workspace=frontend",
+    "lint": "npm run lint --workspace=frontend"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.2",
@@ -14,20 +28,15 @@
     "@tonconnect/sdk": "^3.2.0",
     "@tonconnect/ui-react": "^2.2.0",
     "bip39": "^3.1.0",
-    "bs58": "^6.0.0",
-    "next": "15.3.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "bs58": "^6.0.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.4",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "ts-node": "^10.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }
